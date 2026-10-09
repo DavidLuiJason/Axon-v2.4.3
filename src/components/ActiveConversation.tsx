@@ -34,6 +34,26 @@ const WRAP = 'min-w-0 max-w-full [overflow-wrap:anywhere] break-words';
  */
 const ROW_PERF = '[content-visibility:auto] [contain-intrinsic-size:auto_96px]';
 
+/**
+ * A message the user sent is shown in full only when it is short. Past
+ * either limit it is cut to a few lines and a "Show all" button opens the
+ * rest. The test reads the text only, so no measuring on screen is needed.
+ */
+const LONG_MESSAGE_CHARS = 300;
+const LONG_MESSAGE_BREAKS = 6;
+
+function isLongMessage(text: string): boolean {
+  if (text.length > LONG_MESSAGE_CHARS) return true;
+  let breaks = 0;
+  for (let i = 0; i < text.length; i++) {
+    if (text.charCodeAt(i) === 10) {
+      breaks++;
+      if (breaks >= LONG_MESSAGE_BREAKS) return true;
+    }
+  }
+  return false;
+}
+
 interface MessageRowProps {
   msg: ChatMessage;
   onSelectSuggestion: (prompt: string) => void;
@@ -42,6 +62,7 @@ interface MessageRowProps {
 const MessageRow = React.memo(function MessageRow({ msg, onSelectSuggestion }: MessageRowProps) {
   const [copied, setCopied] = useState(false);
   const [showSources, setShowSources] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const handleCopy = (text: string) => {
     navigator.clipboard?.writeText(text);
@@ -50,10 +71,23 @@ const MessageRow = React.memo(function MessageRow({ msg, onSelectSuggestion }: M
   };
 
   if (msg.role === 'user') {
+    const long = isLongMessage(msg.content);
     return (
       <div className={`flex justify-end ${ROW_PERF}`}>
-        <div className={`${WRAP} bg-[#242528] text-[#ECECEC] text-[15px] leading-relaxed rounded-[22px] rounded-tr-[6px] px-4.5 py-3.5 max-w-[85%] sm:max-w-[78%] shadow-sm border border-white/[0.04]`}>
-          <p className={`${WRAP} whitespace-pre-wrap`}>{msg.content}</p>
+        {/* No max-w-full here: it would fight max-w-[85%] and let the bubble
+            grow to the full row width. The bubble hugs its text. */}
+        <div className="min-w-0 [overflow-wrap:anywhere] break-words bg-[#242528] text-[#ECECEC] text-[15px] leading-relaxed rounded-[22px] rounded-tr-[6px] px-4.5 py-3.5 max-w-[85%] sm:max-w-[78%] shadow-sm border border-white/[0.04]">
+          <p className={`${WRAP} whitespace-pre-wrap ${long && !expanded ? 'line-clamp-5' : ''}`}>{msg.content}</p>
+          {long && (
+            <button
+              type="button"
+              onClick={() => setExpanded((v) => !v)}
+              aria-expanded={expanded}
+              className="mt-1.5 py-1 text-[13px] font-medium text-[#A0A2A7] hover:text-white active:text-white transition-colors"
+            >
+              {expanded ? 'Show less' : 'Show all'}
+            </button>
+          )}
         </div>
       </div>
     );
