@@ -168,7 +168,8 @@ export function createLocalRules(options: LocalRulesOptions): BrainProvider & {
     return reply(
       `${command.describe(done.output, input)}\n\nRan as task ${done.id}: ${done.state} in ${ms} ms, ` +
         `from your exact input.` +
-        (flexible ? '\nUnderstood by: flexible local matcher (Tier 1, offline, no model).' : ''),
+        (flexible ? '\nUnderstood by: flexible local matcher (Tier 1, offline, no model).' : '') +
+        (note ? `\n${note}` : ''),
       done.id
     );
   }
